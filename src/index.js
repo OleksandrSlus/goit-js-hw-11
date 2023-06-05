@@ -1,8 +1,8 @@
-import Notiflix from "notiflix";
-import SimpleLightbox from "simplelightbox";
-import "simplelightbox/dist/simple-lightbox.min.css";
-import { galleryMarkup } from "./js/gallerymarkup";
-import { fetchPics } from "./js/fetch";
+import Notiflix from 'notiflix';
+import SimpleLightbox from 'simplelightbox';
+import 'simplelightbox/dist/simple-lightbox.min.css';
+import { galleryMarkup } from './js/gallerymarkup';
+import { fetchPics } from './js/fetch';
 
 export const refs = {
   formEl: document.querySelector('.search-form'),
@@ -10,7 +10,7 @@ export const refs = {
   galleryEl: document.querySelector('.gallery'),
   inputEl: document.querySelector('input[name="searchQuery"]'),
   observer: document.querySelector('.observer'),
-  loadBtn: document.querySelector('.load-more')
+  loadBtn: document.querySelector('.load-more'),
 };
 
 let currentPage = 1;
@@ -19,12 +19,13 @@ let isNextPageLoad = false;
 let isLastBatchLoaded = false;
 let totalHits = 0;
 
-const onFormSubmit = (e) => {
+const onFormSubmit = e => {
   e.preventDefault();
   const inputValue = refs.inputEl.value.trim();
   if (inputValue === '') {
     return;
   }
+  observer.unobserve(refs.observer);
   currentPage = 1;
   refs.galleryEl.innerHTML = '';
   currentValue = inputValue;
@@ -36,53 +37,54 @@ const onFormSubmit = (e) => {
   e.currentTarget.reset();
 };
 
-const performSearch = async (inputValue) => {
+const performSearch = async inputValue => {
   try {
     const data = await fetchPics(inputValue, currentPage);
     if (data.hits.length === 0) {
-      Notiflix.Notify.failure("Вибачте, немає зображень, що відповідають вашому запиту. Будь ласка, спробуйте ще раз.");
+      Notiflix.Notify.failure(
+        'Вибачте, немає зображень, що відповідають вашому запиту. Будь ласка, спробуйте ще раз.'
+      );
       return;
     }
-
+    galleryMarkup(data);
     if (!isNextPageLoad && currentPage === 1) {
       totalHits = data.totalHits;
       Notiflix.Notify.info(`Ура! Ми знайшли ${totalHits} зображень.`);
     }
 
-    galleryMarkup(data);
     galleryLightbox.refresh();
-    observer.observe(refs.observer);
+    console.log(currentPage);
+    console.log(data.totalHits);
+
     scrollToNextGroup();
-    
+
     if (currentPage * 40 < totalHits) {
-      currentPage++;
+      observer.observe(refs.observer);
       isNextPageLoad = true;
-    } 
-    else {
+    } else {
+      observer.unobserve(refs.observer);
       isLastBatchLoaded = true;
       if (currentPage > 1) {
-        Notiflix.Notify.info("Ви досягли кінця результатів пошуку.");
+        Notiflix.Notify.info('Ви досягли кінця результатів пошуку.');
       }
     }
-  } 
-
-  catch (error) {
+  } catch (error) {
     console.error(error.message);
-  } 
-  finally {
+  } finally {
     isNextPageLoad = false;
   }
 };
 
 const options = {
   root: null,
-  rootMargin: "300px",
+  rootMargin: '300px',
   threshold: 0,
 };
 
-const onLoadMore = (entries) => {
-  entries.forEach((entry) => {
-    if (entry.isIntersecting && !isNextPageLoad && !isLastBatchLoaded) {
+const onLoadMore = entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      currentPage += 1;
       performSearch(currentValue);
     }
   });
@@ -92,10 +94,11 @@ const observer = new IntersectionObserver(onLoadMore, options);
 const optionsEl = { captionData: 'alt', captionDelay: '250' };
 const galleryLightbox = new SimpleLightbox('.gallery a', optionsEl);
 const scrollToNextGroup = () => {
-const { height: cardHeight } = refs.galleryEl.firstElementChild.getBoundingClientRect();
+  const { height: cardHeight } =
+    refs.galleryEl.firstElementChild.getBoundingClientRect();
   window.scrollBy({
     top: cardHeight * 2,
-    behavior: "smooth",
+    behavior: 'smooth',
   });
 };
 refs.formEl.addEventListener('submit', onFormSubmit);
